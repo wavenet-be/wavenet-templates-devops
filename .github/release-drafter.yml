@@ -34,8 +34,18 @@ version-resolver:
     labels:
       - 'minor'
       - 'new-feature'
+      - 'feature'
+      - 'enhancement'
+      - 'chore'
+      - 'documentation'
+      - 'test'
+      - 'hosting'
+      - 'ci'
   patch:
     labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
       - 'patch'
   default: patch
 template: |
