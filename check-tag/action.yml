@@ -1,4 +1,5 @@
 name: Check If Run From Tag
+description: Small action to check if the source of the action is a git tag, aka a release.
 
 runs:
   using: "composite"
