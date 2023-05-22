@@ -2,7 +2,7 @@
 Dans ce repository, vous pourrez trouver un ensemble de templates d'actions et de pratiques que vous pouvez utiliser dans vos projets.
 
 ## Intégration Continue
-### Next.js
+### Next.js - Yarn 3
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-nextjs.yml
 
 ## Release Drafter
