@@ -11,6 +11,9 @@ Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github
 
 Cette action permet de générer une image docker depuis un dockerfile et de la publier sur la GitHub Container Registry.
 
+### DotNet - Azure Function - Azure Functions App
+Action : https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/cd-azure-functions-app.yml
+
 ## Release Drafter
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/release-drafter.yml
 

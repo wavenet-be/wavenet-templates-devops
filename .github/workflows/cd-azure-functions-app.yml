@@ -1,0 +1,53 @@
+name: Deploy on Azure Functions App
+
+on:
+# Décommenter la ligne ci-dessous pour déclencher le workflow à chaque publication de release
+#   release:
+#     types: [published]
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "./projet/output"
+  DOTNET_VERSION: "7.0.x"
+  APP_NAME: "nom_application"
+  SLOT: "nom_slot"
+
+jobs:
+  build-and-deploy:
+    name: "Deploy"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # Si nécessaire, forcer le lancement depuis un tag, à utiliser en combinaison de Release Drafter par exemple
+      - name: Check if run from tag
+        uses: wavenet-be/wavenet-actions-check-tag@v2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ env. DOTNET_VERSION }}
+
+      - name: Nuget Cache
+        id: nuget-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.nuget
+          key: ${{ runner.os }}-build-${{ hashFiles('**/packages.lock.json') }}
+
+      - name: Install dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore -p:OutputPath=output
+
+      - name: Deploy
+        uses: Azure/functions-action@v1
+        id: deploy
+        with:
+          app-name: ${{ env.APP_NAME }}
+          slot-name: ${{ env.SLOT }}
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          publish-profile: ${{ env.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
