@@ -1,4 +1,4 @@
-name: CI - Next.js
+name: CI - Next.js - Yarn 3
 on:
 # Décommenter les lignes suivantes pour activer le CI 
 #   push: 
