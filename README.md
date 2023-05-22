@@ -1,6 +1,10 @@
 # Wavenet - Templates d'Actions
 Dans ce repository, vous pourrez trouver un ensemble de templates d'actions et de pratiques que vous pouvez utiliser dans vos projets.
 
+## Intégration Continue
+### Next.js
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-nextjs.yml
+
 ## Release Drafter
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/release-drafter.yml
 

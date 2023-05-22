@@ -1,0 +1,48 @@
+name: CI - Next.js
+on:
+# Décommenter les lignes suivantes pour activer le CI 
+#   push: 
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+  workflow_dispatch:
+    
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout Sources
+
+      - uses: actions/setup-node@v2
+        name: Setup Node
+        with:
+          node-version: '18'
+      
+      # Permet d'accélerer l'installation des dépendances
+      - name: Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/.yarn
+            ${{ github.workspace }}/.pnp.cjs
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+     
+      # Activation de yarn 3 et installation des dépendances
+      - name: Install Dependencies
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+          yarn install --immutable
+
+      # Build de l'application
+      - name: Build the application  
+        run: |
+          yarn build
