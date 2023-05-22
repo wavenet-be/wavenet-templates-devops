@@ -1,21 +1,12 @@
 name: Check If Run From Tag
-description: Small action to check if the source of the action is a git tag, aka a release.
 
 on:
   workflow_call:
 
-runs:
-  using: "composite"
+jobs:
+  sample:
+    runs-on: ubuntu-latest
  
-  steps:
-  - name: Display Environment
-    env:
-      EVENT_CONTEXT: ${{ toJSON(github.event) }}
-    run: |
-      echo $EVENT_CONTEXT
-      
-  - name: Check if run from tag
-    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-    run: |
-      echo "This workflow must be run from a tag"
-      exit 1
+    steps:      
+    - name: Check if run from tag
+      uses: wavenet-be/wavenet-actions-check-tag@v2
