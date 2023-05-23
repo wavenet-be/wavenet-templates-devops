@@ -1,0 +1,50 @@
+﻿name: Utility - Config Transform
+on:
+  # Décommenter les lignes suivantes pour activer le CI 
+  #   push: 
+  #     branches:
+  #       - main
+  #   pull_request:
+  #     branches:
+  #       - main
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        required: true
+        type: string
+    secrets:
+      SECRET1:
+        required: true
+      SECRET2:
+        required: true
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout Sources
+      
+      # Cette tâche permet de transformer le fichier de configuration _publish/_out/Web.config  
+      # avec le fichier de transformation correspondant à l'environnement passé en paramètre
+      - name: Transform Configuration
+        working-directory: ${{ github.workspace }}/_publish/_out/
+        run: |
+          ${{ github.workspace }}/_tools/dotnet-xdt.exe --source ${{ github.workspace }}/_publish/_out/Web.config --transform ${{ github.workspace }}/_publish/_out/Web.${{ inputs.ENVIRONMENT }}.config --output ${{ github.workspace }}/_publish/_out/Web.Temp.config
+          Copy-Item ${{ github.workspace }}/_publish/_out/Web.Temp.config -Destination ${{ github.workspace }}/_publish/_out/Web.config
+          Remove-Item ${{ github.workspace }}/_publish/_out/Web.Temp.config
+
+      # Cette tâche permet de remplacer les variables dans le fichier de configuration _publish/_out/Web.config
+      # avec les secrets correspondants.
+      # Cela correspond à la parties Variables dans les Releases de devops
+      - name: Variable Substitution
+        uses: robertlynja/variable-substitution@v1.02
+        with:
+          files: ${{ github.workspace }}/_publish/_out/Web.config
+        env:
+          'Niveau1a:Niveau2': ${{ secrets.SECRET1 }}
+          'Niveau1b:Niveau2:Niveau3': ${{ secrets.SECRET2 }}

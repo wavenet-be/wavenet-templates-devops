@@ -28,3 +28,8 @@ Cet exemple gère des catégories et des tags complémentaires à l'exemple four
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/check-tags.yml
 
 Cette action permet de vérifier si le workflow a bien été lancé par un tag, elle utilise une actions personnalisée présente dans le répository suivant : https://github.com/wavenet-be/wavenet-actions-check-tag
+
+## Transformation des configurations
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/utility-config-transform.yml
+
+Ce template d'action est un exemple d'utilisation des transformation XML des fichiers Web.Config et du remplacement des variables pour pouvoir effectuer des actions similaires à ce qui était disponible sur Devops avec la gestion des releases.
