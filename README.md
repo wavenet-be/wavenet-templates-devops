@@ -6,6 +6,11 @@ Dans ce repository, vous pourrez trouver un ensemble de templates d'actions et d
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-nextjs.yml
 
 ## Déploiement
+### Docker - Azure Container Registry
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/cd-docker-acr.yml
+
+Cette action permet de générer une image docker depuis un dockerfile et de la publier sur l'Azure Container Registry.
+
 ### Docker - GitHub Container Registry
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/cd-docker-ghcr.yml
 
