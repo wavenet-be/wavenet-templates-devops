@@ -8,6 +8,9 @@ Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github
 ### .Net Framework - MSBuild
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-netframework.yml
 
+### Front - Gulp - Grunt
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-gulp-grunt.yml
+
 ## Déploiement
 ### Docker - Azure Container Registry
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/cd-docker-acr.yml
