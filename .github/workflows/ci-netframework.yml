@@ -1,0 +1,45 @@
+name: CI - .Net
+
+on:
+  workflow_dispatch:
+#   pull_request:
+#     types: [ opened, synchronize, reopened ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUILD_SOLUTION: Wavenet.Total.Proxifuel.sln
+  WORKING_DIRECTORY: .
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup MsBuild
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Setup NuGet.exe for use with actions
+        uses: NuGet/setup-nuget@v1.0.5
+
+      - name: Cache Nuget Packages
+        id: cache-npm
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-nuget-packages
+        with:
+          path: packages
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/packages.config') }}
+
+      - name: .Net - Restore Nuget
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: nuget restore ${{ env.BUILD_SOLUTION }}
+
+      - name: .Net - Build Solution
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: msbuild ${{ env.BUILD_SOLUTION }} /p:Configuration=Release

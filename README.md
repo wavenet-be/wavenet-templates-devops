@@ -5,6 +5,9 @@ Dans ce repository, vous pourrez trouver un ensemble de templates d'actions et d
 ### Next.js - Yarn 3
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-nextjs.yml
 
+### .Net Framework - MSBuild
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-netframework.yml
+
 ## Déploiement
 ### Docker - GitHub Container Registry
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/cd-docker-ghcr.yml
