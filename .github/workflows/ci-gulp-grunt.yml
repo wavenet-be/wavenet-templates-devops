@@ -1,0 +1,52 @@
+name: CI - Gulp Grunt
+
+on:
+  workflow_dispatch:
+#   pull_request:
+#     types: [ opened, synchronize, reopened ]
+    
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FRONT_DIRECTORY: TODO
+
+jobs:
+  build-front:
+    name: Build Front
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+            
+      - name: Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/${{ env.FRONT_DIRECTORY }}/.yarn
+            ${{ github.workspace }}/${{ env.FRONT_DIRECTORY }}/.pnp.cjs
+            ${{ github.workspace }}/${{ env.FRONT_DIRECTORY }}/.next/cache
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/yarn.lock') }}
+          
+      - name: Install Dependencies
+        working-directory: ${{ env.FRONT_DIRECTORY }}
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+          yarn install --immutable
+          
+      - name: Run Gulp
+        working-directory: ${{ env.FRONT_DIRECTORY }}
+        run: |
+          yarn gulp TODO_TASK_NAME
+          
+      - name: Run Grunt
+        working-directory: ${{ env.FRONT_DIRECTORY }}
+        run: |
+          yarn grunt TODO_TASK_NAME
