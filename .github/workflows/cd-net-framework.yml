@@ -1,0 +1,145 @@
+﻿name: Template - CD - .Net Framework
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        type: string
+        description: 'Environment'
+        default: 'hp'
+        required: true
+      SLOT_COPY_URL:
+        type: string
+        description: 'Slot Copy Url'
+    secrets: 
+        AZURE_WEBAPP_PUBLISH_PROFILE:
+            description: 'Azure WebApp Publish Profile'
+            required: true
+        UMBRACO_DB_DSN:
+            description: 'Umbraco Connection String'
+            required: true
+
+env:
+  WORKING_DIRECTORY: .
+  BUILD_SOLUTION: Wavenet.Client.Project.sln
+  FRONT_DIRECTORY: Wavenet.Client.Project.Site
+  PUBLISH_PROJECT: Wavenet.Client.Project.Site/Wavenet.Client.Project.Site.csproj
+  PACKAGE_DIRECTORY: ${{ github.workspace}}/_out
+  APP_NAME: clientproject
+
+jobs:
+  build-publish:
+    runs-on: windows-latest
+    environment: ${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      # Permet de vérifier que le déploiement sur un environnement autre que la HP démarre bien d'un tag
+      # A utiliser avec Reelase Drafter :)
+      - name: Check if run from tag
+        if: inputs.ENVIRONMENT != 'hp'
+        uses: wavenet-be/wavenet-actions-check-tag@v2
+      
+      # Extrait la version depuis le tag et le remplace dans le fichier Version.cs
+      # Permet d'avoir une assembly qui suit les versions de releases drafters
+      - name: Extract Version
+        uses: damienaicheh/extract-version-from-tag-action@v1.1.0
+        
+      - name: Determine And Set Version
+        shell: pwsh
+        run: |
+          ((Get-Content -path "${{ github.workspace }}/Version.cs" -Raw) -replace '1.0.0-pre','${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}.${{ env.NUMBER_OF_COMMITS_SINCE_TAG }}') | Set-Content -Path ${{ github.workspace }}/Version.cs
+          ((Get-Content -path "${{ github.workspace }}/Version.cs" -Raw) -replace '1.0.0','${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}') | Set-Content -Path ${{ github.workspace }}/Version.cs
+
+      # Exemple de génération de l'application client
+      - name: Client - Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Client - Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/${{ env.FRONT_DIRECTORY }}/.yarn
+            ${{ github.workspace }}/${{ env.FRONT_DIRECTORY }}/.pnp.cjs
+            ${{ github.workspace }}/${{ env.FRONT_DIRECTORY }}/.next/cache
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Client - Install Dependencies
+        working-directory: ${{ env.FRONT_DIRECTORY }}
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+          yarn install --immutable
+
+      - name: Client - Run Gulp
+        working-directory: ${{ env.FRONT_DIRECTORY }}
+        run: |
+          yarn gulp sassWinForLife
+
+      - name: Client - Run Grunt
+        working-directory: ${{ env.FRONT_DIRECTORY }}
+        run: |
+          yarn grunt all
+
+      # Setup .Net
+      - name: .Net - Setup MsBuild
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: .Net - Setup NuGet.exe for use with actions
+        uses: NuGet/setup-nuget@v1.2
+
+      # Restore Nuget - Version classique
+      - name: .Net - Restore Nuget
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: nuget restore ${{ env.BUILD_SOLUTION }}
+
+      # Restore Nuget - Version .Net Core / Net Standard
+      - name: .Net - Restore Nuget - DotNet
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: dotnet restore ${{ env.BUILD_SOLUTION }}
+        
+      # Permet de réaliser des transformations de fichiers de configuration
+      # Remplace les variables des pipelines de release de Devops
+      - name: .Net - Variable Substitution
+        uses: robertlynja/variable-substitution@v1.02
+        with:
+          files: ${{ env.FRONT_DIRECTORY }}/Web.config
+        env:
+          umbracoDbDSN: ${{ secrets.UMBRACO_DB_DSN }}
+
+      # Build Solution, en ajoutant les paramètres de déploiement
+      # Nécessite la présence d'un fichier de publication filesystem.pubxml dans Properties\PublishProfiles
+      # Exemple de contenu du fichier : https://github.com/wavenet-be/wavenet-devops-templates/blob/main/samples/filesystem.pubxml
+      - name: .Net - Build Solution
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: msbuild ${{ env.PUBLISH_PROJECT }} /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=filesystem /p:PublishUrl="${{ env.PACKAGE_DIRECTORY }}"
+      
+      # Si nécessaire, copie les depuis un slot de production vers un slot de préproduction
+      # Nécessite que le projet implémente la route qui permet de faire du slot copy
+      - name: Execute Slot Copy
+        if: inputs.SLOT_COPY_URL != ''
+        run: |
+          curl --url %1 -o tmp.txt 2> null
+          type tmp.txt
+          findstr /C:"Error:" tmp.txt 1>&2
+          findstr /C:"Success - Updated:" tmp.txt > tmp2.txt
+          set hassuccess=
+          set /p hassuccess=<tmp2.txt
+          if "%hassuccess%"=="" echo "Missing 'Success - Updated: x files'" 1>&2
+          del tmp.txt & del tmp2.txt
+      
+      # Déploiement de l'application sur Azure
+      # Utilise l'ensemble des fichiers présents dans le dossier de publication
+      - name: Publish Website  
+        uses: azure/webapps-deploy@v2
+        with:
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.PACKAGE_DIRECTORY }}
+          app-name: ${{ env.APP_NAME }}
+          slot-name: ${{ inputs.ENVIRONMENT }}
+          
