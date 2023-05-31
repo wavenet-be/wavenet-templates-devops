@@ -1,4 +1,4 @@
-# Wavenet - Templates d'Actions
+# Wavenet - Exemples d'Actions
 Dans ce repository, vous pourrez trouver un ensemble de templates d'actions et de pratiques que vous pouvez utiliser dans vos projets.
 
 ## Intégration Continue
