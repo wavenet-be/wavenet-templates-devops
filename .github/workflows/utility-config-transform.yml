@@ -1,4 +1,4 @@
-﻿name: Utility - Config Transform
+name: Utility - Config Transform
 on:
   # Décommenter les lignes suivantes pour activer le CI 
   #   push: 
@@ -31,6 +31,8 @@ jobs:
       
       # Cette tâche permet de transformer le fichier de configuration _publish/_out/Web.config  
       # avec le fichier de transformation correspondant à l'environnement passé en paramètre
+      - name: Setup dotnet-xdt
+        run: dotnet tool update --tool-path ${{ github.workspace }}/_tools dotnet-xdt
       - name: Transform Configuration
         working-directory: ${{ github.workspace }}/_publish/_out/
         run: |
