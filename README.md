@@ -8,6 +8,9 @@ Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github
 ### .Net Framework - MSBuild
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-netframework.yml
 
+### .Net Core - dotnet build - Sonnar
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-netcore.yml
+
 ### Front - Gulp - Grunt
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-gulp-grunt.yml
 

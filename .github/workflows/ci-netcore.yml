@@ -1,0 +1,70 @@
+name: CI - Scrapper
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/Scrapper/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/Scrapper/**'
+    types: [ opened, synchronize, reopened ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+env:
+  SONAR_PROJECT_KEY: TOREPLACE_SONAR_PROJECT_KEY
+  PROJECT_DIR: TOREPLACE_PROJECT_DIR
+
+jobs:
+  build-and-analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract Version
+        uses: damienaicheh/extract-version-from-tag-action@v1.1.0
+
+      - name: Cache Sonar Working Directory
+        uses: actions/cache@v3
+        with:
+          key: sonar-working
+          path: |
+            ~/.sonar/cache
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+          
+      - name: Setup Java  
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+          
+      - name: Install SonarCloud scanner
+        run: |
+          mkdir -p .sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+          dotnet tool install --global dotnet-sonarscanner
+          chmod +x ./.sonar/scanner/dotnet-sonarscanner
+
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"${{ env.SONAR_PROJECT_KEY }}" /o:"wavenet-be" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.projectBaseDir="${{ github.workspace }}" /d:sonar.scm.provider=git /d:sonar.cs.opencover.reportsPaths="${{ env.PROJECT_DIR }}/**/TestResults/**/coverage.opencover.xml" -d:sonar.cs.vstest.reportsPaths="${{ env.PROJECT_DIR }}/**/TestResults/*.trx" /v:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
+           dotnet build ${{ env.PROJECT_DIR }}
+           dotnet test ${{ env.PROJECT_DIR }} --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
