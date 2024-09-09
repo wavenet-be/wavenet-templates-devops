@@ -1,0 +1,126 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SONAR_PROJECT_KEY: TODO_PROJECTKEY
+  PROJECT_DIR: TODO_MAIN_PROJECT_DIR
+  PROJECT_SLN: TODO_MAIN_PROJECT_SLN
+  FRONT_DIR: TODO_FRONT_DIR
+
+jobs:
+  build-and-analyze:
+    name: Build and Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract Version
+        uses: damienaicheh/extract-version-from-tag-action@v1.3.0
+
+      - name: Cache Sonar Working Directory
+        uses: actions/cache@v4
+        with:
+          key: sonar-working
+          path: |
+            ~/.sonar/cache
+            
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/src/frontend/.yarn/cache
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/src/frontend/yarn.lock') }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+          
+      - uses: actions/setup-node@v4
+        name: Setup Node
+        with:
+          node-version: '20'
+          
+      - name: Install Dependencies
+        working-directory: ${{ env.FRONT_DIR }}
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+          yarn install --immutable
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+
+      - name: Install SonarCloud scanner
+        run: |
+          mkdir -p .sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+          dotnet tool install --global dotnet-sonarscanner
+          chmod +x ./.sonar/scanner/dotnet-sonarscanner
+
+      - name: Build and analyze - Sonar Begin
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"${{ env.SONAR_PROJECT_KEY }}" /o:"wavenet-be" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.projectBaseDir="${{ github.workspace }}" /d:sonar.scm.provider=git /d:sonar.cs.opencover.reportsPaths="${{ github.workspace }}/**/TestResults/**/coverage.opencover.xml" -d:sonar.cs.vstest.reportsPaths="${{ env.PROJECT_DIR }}/**/TestResults/*.trx" /v:${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
+          
+      - name: Build and analyze - Build Backend
+        run: |
+          dotnet nuget update source WavenetNuget --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+          dotnet build ${{ env.PROJECT_DIR }}/${{ env.PROJECT_SLN }}
+          dotnet test ${{ env.PROJECT_DIR }}/${{ env.PROJECT_SLN }} --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          
+      - name: Build and analyze - Build Frontend
+        working-directory:  ${{ env.FRONT_DIR }}
+        run: |
+          yarn
+          yarn build
+
+      - name: Build and analyze - Sonar End
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          
+      - uses: LouisBrunner/checks-action@v2.0.0
+        name: Status Check
+        if: always()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Build and Analyze
+          conclusion: ${{ job.status }}
+
+  autoapprove:
+    name: Auto-Approve a PR by renovate
+    needs:
+      - build-and-analyze
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    if: github.event_name == 'pull_request'
+      && github.actor == 'wavenet-renovate[bot]'
+      && contains(github.event.pull_request.labels.*.name, 'renovate')
+      && contains(github.event.pull_request.labels.*.name, 'not-breaking')
+    steps:
+      - name: Auto Approve
+        uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Auto Merge
+        uses: "pascalgn/automerge-action@v0.16.3"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          MERGE_METHOD: "rebase"

@@ -35,6 +35,11 @@ Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github
 
 Cette action permet de générer une image docker depuis un dockerfile et de la publier sur la GitHub Container Registry.
 
+### .Net + Frontend - Monorepo
+Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/ci-monorepo.yml
+
+Cette action permet de gérer le CI + Sonar d'un mono repo avec un projet .Net et un Frontend
+
 ## Release Drafter
 Action: https://github.com/wavenet-be/wavenet-devops-templates/blob/main/.github/workflows/release-drafter.yml
 
