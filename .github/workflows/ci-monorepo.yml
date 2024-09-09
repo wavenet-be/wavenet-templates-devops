@@ -81,7 +81,7 @@ jobs:
           
       - name: Build and analyze - Build Backend
         run: |
-          dotnet nuget update source WavenetNuget --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+          // dotnet nuget update source WavenetNuget --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
           dotnet build ${{ env.PROJECT_DIR }}/${{ env.PROJECT_SLN }}
           dotnet test ${{ env.PROJECT_DIR }}/${{ env.PROJECT_SLN }} --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
           
